@@ -34,15 +34,9 @@ void switchInit(void)
     AD1CON1bits.ON = 1; 
 }
 
-void readKnobs(void)
-{
-    knobValues[0] = switchKnobValue(0)<<6;
-    knobValues[1] = switchKnobValue(1)<<6;   
-}
-
 int getKnob(int channel)
 {
-    return knobValues[channel];
+    return (knobValues[channel]);
 }
 
 int switchKnobValue(int channel)
@@ -74,13 +68,13 @@ int switchKnobValue(int channel)
 
 
 //returns a raw (but debounced!) value of the switches
+//also logic flips them (PWR switch is active low) if they need it
 int switchValueRaw(int switchNum)
 {
     if(switchNum) {
-        return (switchRaw&0b10);
-    }
-    else {
-        return (switchRaw&0b01);
+        return ((~switchRaw)&0b100);
+    } else {
+        return (switchRaw&0b010);
     }
 }
 
@@ -90,21 +84,24 @@ void switchRead(void)
     switchRaw = PORTC&0b110;
     if((switchShadow&0b10) != (PORTC&0b10)){
         if(PORTC&0b10){
-            switchEvents |= 0b0010;
+            switchEvents |= 0b0001;
+        } else {
+            switchEvents |= 0b0100;
         }
-        else {
+    }
+    
+    if((switchShadow&0b100) != (PORTC&0b100)){
+        if(PORTC&0b100){
+            switchEvents |= 0b0010;
+        } else {
             switchEvents |= 0b1000;
         }
     }
     
-    if((switchShadow&0b1) != (PORTC&0b1)){
-        if(PORTC&0b1){
-            switchEvents |= 0b0001;
-        }
-        else {
-            switchEvents |= 0b0100;
-        }
-    }
+    switchShadow = PORTC&0b110;
+    
+    knobValues[0] = switchKnobValue(0)<<6;
+    knobValues[1] = switchKnobValue(1)<<6;  
     
     return;
 }

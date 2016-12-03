@@ -45,72 +45,204 @@
 
 int gTimer;
 int clkPulse;
+int clkPulseFlag;
+int bufferTimer;
 
 
-int derpCounter = 0;
 
+enum state curr_state = sm_init;
+enum state next_state = sm_undefined;
 /*
  * 
  */
 int main(int argc, char** argv) {
 
-    uint8_t switchEvents=0;
-    
-    int i=0;
-    int j=0;
+
     SYSTEMConfigPerformance(40000000);
     INTEnableSystemMultiVectoredInt();
 
-    
+    uint8_t switchEvents=0;
+    int i=0;
+    int j=0;
+    int knobShadow;
+    int currentLED = 0;
+    int gaugeLight = 0;
+    int gaugeBin = 0x1;
+    int changing;
     
     init();
-   
-    UART_print_str("Hello, i'm clocky!\r\n");
-   
     
-    rtccSetMin(45);
-    rtccSetHr(12);
-    
+    UART_print_str("||Reset!||\r\n");
     LEDTRISCLR = LEDMASK;
     for(;;) {
         WDTCONCLR = 0x8000;
         switchEvents = switchGetEvents(); //lock in latest switch events
         
+        clkPulseFlag = clkPulse;
+            
 
        
-        if(clkPulse)        {
+        if(clkPulse) {
             clkPulse = 0;
             LATC = (gTimer<<3) & 0b01111000;    
-        }
-        
-        
-        tlcClr();
-        tlcSetChannel(gTimer&0xf,TMR1>>3);
-        tlcAssemble(1<<(gTimer&0xf));
-        tlcUpdate();
-
-        if(i>5000) {
             UART_print_str("Knobs: ");
-
             UART_print_hex(16,getKnob(0));
             UART_print_str("/");
             UART_print_hex(16,getKnob(1));
-
             UART_print_str("\t");
             UART_print_str("\r\n");
-            i = 0;
-        }
-        else {
-            i++; 
         }
         
-        if(switchEvents){
-            UART_print_str("Switches: ");
-            UART_print_hex(4,switchEvents);
-            UART_print_str("\r\n");
-        }
+        
+        
+        //Main state machine
+        next_state = sm_undefined;
+        //UART_putc((char)((int)curr_state+0x61));
+        switch(curr_state) {
+            case sm_undefined:
+                UART_print_str("UNDEFINED STATE!\r\n");
+                next_state = sm_init;
+                break;
+            case sm_init:
+                UART_print_str("Hello, i'm clocky!\r\n");
+                rtccSetMin(45);
+                rtccSetHr(12);
+                if(switchValueRaw(1)) {
+                    next_state = sm_trans_to_clk;
+                } else {
+                    next_state = sm_trans_to_cal;
+                }
+                break;
+            case sm_trans_to_cal:
+                UART_print_str("sm_trans_to_cal\r\n");
+                tlcClr();
+                gaugeLight = 0;
+                next_state = sm_cal;
+                break;
+            case sm_cal:
+                
+                //for now, map knobs to gauges
+                dacSet(getKnob(1),1);
+                dacSet(getKnob(0),0);
+                dacLoad();
+                
+                
+                if(switchEvents & 0b01)   {
+                    
+                    
+                    gaugeLight++;
+                    tlcClr();
+                    tlcSetChannel((gaugeLight&0xf),0xfff);
+                    tlcAssemble(0xffff);
+                    tlcUpdate();
+                    
+                    
+                }
+                
+
+                
+                
+                
+                if(switchValueRaw(1)) {
+                    next_state = sm_leaving_cal;
+                } else {
+                    next_state = sm_cal;
+                }
+                break;
+            case sm_trans_to_clk:
+                
+                UART_print_str("sm_trans_to_clk\r\n");
+                tlcClr();
+                next_state = sm_clk;
+                break;
+            case sm_clk:
+                
+                dacSet(rtccMin()*(0xffff/60),0);
+                dacSet(rtccSec()*(0xffff/60),1);
+                dacLoad();
+
+                if(switchEvents & 0b01) {
+                    currentLED++;
+                    if(currentLED>7) {
+                        currentLED = 0;
+                    }
+                    knobShadow = getKnob(1);
+                    UART_print_str("currentLED ");
+                    UART_print_hex(8,currentLED);
+                    UART_print_str("\r\n");
+                    changing = 0;
+                }
+                
+                if(!changing) {
+                    if(abs(getKnob(1) - knobShadow) > 0x400) {
+                        changing = 1;
+                        UART_print_str("changing!\r\n");
+                    }
+                }
+                
+                if(changing) {
+                    tlcSetChannel(currentLED,getKnob(1)>>4);
+                }
+                
+                
+                
+//                tlcSetChannel(0,0x0000);
+//                tlcSetChannel(1,0x1111);
+//                tlcSetChannel(2,0x2222);
+//                tlcSetChannel(3,0x3333);
+//                tlcSetChannel(4,0x4444);
+//                tlcSetChannel(5,0x5555);
+//                tlcSetChannel(6,0x6666);
+//                tlcSetChannel(7,0x7777);
+//                tlcSetChannel(8,0x8888);
+//                tlcSetChannel(9,0x9999);
+//                tlcSetChannel(0xa,0xaaaa);
+//                tlcSetChannel(0xb,0xbbbb);
+//                tlcSetChannel(0xc,0xcccc);
+//                tlcSetChannel(0xd,0xdddd);
+//                tlcSetChannel(0xe,0xeeee);
+//                tlcSetChannel(0xf,0xffff);
+
+                
+//                if(changing) {
+//                    for(i = 0; i < 16; i++) {
+//                        tlcSetChannel(i,getKnob(1)>>4);
+//                    }
+//                }
+                
+                
+                
+                
+                tlcAssemble(0xffff);
+                if(clkPulseFlag || 0) {
+                    //shift the registers around
+                    tlcUpdate();
+                }
             
-   
+               
+                
+                
+                if(switchValueRaw(1) == 0) {
+                    next_state = sm_leaving_clk;
+                } else {
+                    next_state = sm_clk;
+                }
+                break;
+            case sm_leaving_clk:
+                next_state = sm_trans_to_cal;
+                break;
+            default: 
+                next_state = sm_init;
+                break;        
+        }
+        curr_state = next_state;
+        
+        
+        //delay so that debugging is easier!
+//        bufferTimer = 0;
+//        while(bufferTimer<10);
+        
+        clkPulseFlag = 0;
     }
     
     return (EXIT_SUCCESS);
@@ -162,19 +294,7 @@ void initTMR(void)
 void __ISR(_TIMER_1_VECTOR,IPL1AUTO) _T1Interrupt()
 {
     IFS0CLR = IFS0_T1IF;
-    gTimer++;
-    UART_print_str("derp = ");
-    UART_print_dec(0,derpCounter);
-    
-    
-    UART_print_str(",TMR4 = ");
-    UART_print_hex(32,TMR4);
-    UART_print_str(",TMR5 = ");
-    UART_print_hex(32,TMR5);
-    UART_print_str("\r\n");
-    
-    derpCounter = 0;
-    
+    gTimer++;    
     clkPulse = 1;
 }
 
@@ -182,10 +302,9 @@ void __ISR(_TIMER_1_VECTOR,IPL1AUTO) _T1Interrupt()
 //semi-rt tasks for low priority (50msec things), like reading knobs and switches
 void __ISR(_TIMER_4_VECTOR,IPL1AUTO) _T4Interrupt()
 {
+    bufferTimer++;
     TMR4 = 0;
-    derpCounter++;
     IFS0CLR = IFS0_T4IF;
-    readKnobs();
     switchRead();
 }
 

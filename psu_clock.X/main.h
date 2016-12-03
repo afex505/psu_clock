@@ -51,6 +51,18 @@
 #define LEDMASK 0b01111000
 
 
+
+enum state{
+    sm_undefined,       //a
+    sm_init,            //b
+    sm_trans_to_cal,    //c
+    sm_cal,             //d
+    sm_leaving_cal,     //e
+    sm_trans_to_clk,    //f
+    sm_clk,             //g
+    sm_leaving_clk,     //h
+};
+
 void init(void);
 
 void initTMR(void);

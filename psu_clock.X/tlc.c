@@ -16,6 +16,7 @@ void tlcInit(void)
     // SCK      RB14 (SCK1))
     // XLAT     RA0
     // VPRG     n/c (float = gnd))
+    // XERR     RB7
     
     // BLANK: Pop high to start counting
     // GSCLK: straight clock
@@ -72,7 +73,7 @@ void tlcInit(void)
     SPI1CONbits.ENHBUF = 1;
     SPI1CONbits.CKE = 1;
 
-    SPI1BRG=0x2; // use FPB/4 clock frequency
+    SPI1BRG=0x6; // use FPB/4 clock frequency
     SPI1STATCLR=0x20; // clear the Overflow
    
     //setup Interrupt to fire when empty, but DO NOT ENABLE (we do this when we write))
@@ -86,6 +87,10 @@ void tlcInit(void)
     //setup XLAT
     TRISAbits.TRISA0 = 0;
     LATACLR = 1;
+    
+    //setup XERR
+    TRISBbits.TRISB7 = 1;
+    CNPUBbits.CNPUB7 = 1;
     
     
     tlcClr();
@@ -149,12 +154,28 @@ void tlcClr(void)
     }
 }
 
+void tlcFull(void)
+{
+    int i;
+
+    for(i = 0; i < 6; i++) {
+        spiMessage[i] = 0xffffffff;
+    }
+    for(i = 0; i < 16; i++){
+        values[i] = 0xfff;
+    }
+}
+
 void tlcUpdate(void)
 {
     //make sure previous transition completed
     while(waiting){};
     //load up buffer!
 
+    //drop XLAT
+    LATACLR = 1;
+    Nop();
+    Nop();
     SPI1BUF = spiMessage[0]; 
     SPI1BUF = spiMessage[1];
     SPI1BUF = spiMessage[2];
@@ -185,12 +206,17 @@ void __ISR(_SPI_1_VECTOR,IPL1AUTO) _SPI1Interrupt()
     //disable the interrupt
     IEC1CLR = IEC1_SPI1TX_IE;
     //pop XLAT
+    Nop();
+    Nop();
+    Nop();
     LATASET = 1;
     Nop();
     Nop();
     Nop();
-    LATACLR = 1;
     IFS1CLR = IFS1_SPI1TX_IF;
+    Nop();
+    Nop();
+    Nop();
     waiting = 0;
 }
 

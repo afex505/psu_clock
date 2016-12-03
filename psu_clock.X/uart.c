@@ -9,11 +9,11 @@ void uartInit(void)
     
     RPC9R = 0b0010; //U2TX
     U2MODE = (1<<15)|(1<<3); //ON|BRGH
-    
     U2STA = (0b10<<14)|(1<<10);// UTXEN
             //int generated when buffer empty
             
-    U2BRG = 4;
+    U2BRG = 4; //baud=2000000
+    //U2BRG=36;
             
     
     //check transmit U2STAbits.TRMT
