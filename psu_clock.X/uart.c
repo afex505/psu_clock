@@ -4,10 +4,11 @@
 
 void uartInit(void)
 {
-    //UART2 is on RC9
-    TRISCbits.TRISC9 = 0;
+    //UART2 is on RF0 (was RC9)
+    TRISFbits.TRISF0 = 0;
+    ANSELFbits.ANSF0 = 0;
     
-    RPC9R = 0b0010; //U2TX
+    RPF0R = 0b0001; //U2TX
     U2MODE = (1<<15)|(1<<3); //ON|BRGH
     U2STA = (0b10<<14)|(1<<10);// UTXEN
             //int generated when buffer empty

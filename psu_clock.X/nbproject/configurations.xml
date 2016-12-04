@@ -7,9 +7,9 @@
       <itemPath>main.h</itemPath>
       <itemPath>uart.h</itemPath>
       <itemPath>rtcc.h</itemPath>
-      <itemPath>dac.h</itemPath>
       <itemPath>switches.h</itemPath>
       <itemPath>tlc.h</itemPath>
+      <itemPath>sfrs.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -21,7 +21,6 @@
       <itemPath>main.c</itemPath>
       <itemPath>uart.c</itemPath>
       <itemPath>rtcc.c</itemPath>
-      <itemPath>dac.c</itemPath>
       <itemPath>switches.c</itemPath>
       <itemPath>tlc.c</itemPath>
     </logicalFolder>
@@ -36,7 +35,7 @@
     <conf name="default" type="2">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
-        <targetDevice>PIC32MX250F128D</targetDevice>
+        <targetDevice>PIC32MX430F064H</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
         <platformTool>ICD3PlatformTool</platformTool>
@@ -227,6 +226,8 @@
         <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
         <property key="UART1" value="true"/>
         <property key="UART2" value="true"/>
+        <property key="UART3" value="true"/>
+        <property key="UART4" value="true"/>
         <property key="USB" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>

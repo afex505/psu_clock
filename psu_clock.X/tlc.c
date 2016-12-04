@@ -1,5 +1,5 @@
 
-#include <proc/p32mx250f128d.h>
+#include <proc/p32mx430f064h.h>
 #include "tlc.h"
 
 
@@ -10,13 +10,13 @@ int waiting = 0;
 
 void tlcInit(void)
 {
-    // BLANK    RC7 (OC1))
-    // GSCLK    RC8 (OC2))
-    // SDO      RB8 (SDO1)
-    // SCK      RB14 (SCK1))
-    // XLAT     RA0
+    // BLANK    RD8 (OC1)       / IO2
+    // GSCLK    RD0 ((OC2)))/ BOOSTPWM
+    // SDO      RB8 (SDO1)      / IN13
+    // SCK      RD2 (SCK1))     / BOOSTCLK
+    // XLAT     RD9             / MGCSDA
     // VPRG     n/c (float = gnd))
-    // XERR     RB7
+    // XERR     RB7             / IN12
     
     // BLANK: Pop high to start counting
     // GSCLK: straight clock
@@ -27,9 +27,9 @@ void tlcInit(void)
     //setup our clocks
     
     //GSCLK, fast (1Mhz?) OC2
-    TRISCbits.TRISC8 = 0;
-    RPC8R = 0b0101; //OC2 muxed
+    TRISDbits.TRISD0 = 0;
     
+    RPD0R = 0b1011;   //OC2 muxed
     OC2CON = 0x0000; // Turn off the OC2 when performing the setup
     OC2R = 0x0004; // Initialize primary Compare register
     OC2RS = 0x0004; // Initialize secondary Compare register
@@ -43,8 +43,8 @@ void tlcInit(void)
     
     
     //BLANK clock, timer is TMR2*4096
-    TRISCbits.TRISC7 = 0;
-    RPC7R = 0b0101; //OC1 muxed
+    TRISDbits.TRISD8 = 0;
+    RPD8R = 0b1100; //OC1 muxed
     
     OC1CON = 0x0000; // Turn off the OC2 when performing the setup
     OC1R =  0x0002; // Initialize primary Compare register
@@ -61,10 +61,12 @@ void tlcInit(void)
     
     //setup SPI
     // SDO      RB8 (SDO1)
-    // SCK      RB14 (SCK1))
-    TRISBCLR = (1<<8)|(1<<14);
-    ANSELBbits.ANSB15 = 0;
-    RPB8R = 0b0011; //set RB8 to SDO1
+    // SCK      RD2 (SCK1))
+    TRISBCLR = (1<<8);
+    TRISDCLR = (1<<2);
+    ANSELDCLR = (1<<2);
+    ANSELBCLR = (1<<8);
+    RPB8R = 0b1000; //set RB8 to SDO1
 
     //setup SP1
     SPI1CONbits.MODE32 = 1;
@@ -73,7 +75,7 @@ void tlcInit(void)
     SPI1CONbits.ENHBUF = 1;
     SPI1CONbits.CKE = 1;
 
-    SPI1BRG=0x6; // use FPB/4 clock frequency
+    SPI1BRG=0x40; // use FPB/4 clock frequency
     SPI1STATCLR=0x20; // clear the Overflow
    
     //setup Interrupt to fire when empty, but DO NOT ENABLE (we do this when we write))
@@ -85,8 +87,8 @@ void tlcInit(void)
     SPI1CONbits.ON = 1;      
     
     //setup XLAT
-    TRISAbits.TRISA0 = 0;
-    LATACLR = 1;
+    TRISDbits.TRISD9 = 0;
+    XLAT_UP();
     
     //setup XERR
     TRISBbits.TRISB7 = 1;
@@ -173,7 +175,7 @@ void tlcUpdate(void)
     //load up buffer!
 
     //drop XLAT
-    LATACLR = 1;
+    XLAT_DOWN();
     Nop();
     Nop();
     SPI1BUF = spiMessage[0]; 
@@ -209,7 +211,7 @@ void __ISR(_SPI_1_VECTOR,IPL1AUTO) _SPI1Interrupt()
     Nop();
     Nop();
     Nop();
-    LATASET = 1;
+    XLAT_UP();
     Nop();
     Nop();
     Nop();

@@ -40,7 +40,7 @@
 #pragma config PWP = OFF                // Program Flash Write Protect (Disable)
 #pragma config BWP = OFF                // Boot Flash Write Protect bit (Protection Disabled)
 #pragma config CP = OFF                 // Code Protect (Protection Disabled)
-
+#pragma config DEBUG = ON
 
 
 int gTimer;
@@ -122,10 +122,7 @@ int main(int argc, char** argv) {
             case sm_cal:
                 
                 //for now, map knobs to gauges
-                dacSet(getKnob(1),1);
-                dacSet(getKnob(0),0);
-                dacLoad();
-                
+ 
                 
                 if(switchEvents & 0b01)   {
                     
@@ -157,10 +154,7 @@ int main(int argc, char** argv) {
                 break;
             case sm_clk:
                 
-                dacSet(rtccMin()*(0xffff/60),0);
-                dacSet(rtccSec()*(0xffff/60),1);
-                dacLoad();
-
+                
                 if(switchEvents & 0b01) {
                     currentLED++;
                     if(currentLED>7) {
@@ -258,7 +252,6 @@ void init(void)
     
     uartInit();
     rtccInit();
-    dacInit();
     switchInit();
     tlcInit();
     
