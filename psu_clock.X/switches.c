@@ -3,7 +3,7 @@
 
 
 static int knobValues[2];
-static uint8_t switchShadow = 0;
+static int switchShadow[2];
 static uint8_t switchEvents = 0;
 
 
@@ -16,6 +16,10 @@ void switchInit(void)
     AD1CON1bits.SSRC = 0b111;//auto convert
     AD1CON3bits.SAMC = 0b11111;//31tad
     AD1CON1bits.ON = 1; 
+    
+    switchShadow[0] = SW_0_STATE;
+    switchShadow[1] = SW_1_STATE;
+    
 }
 
 int getKnob(int channel)
@@ -65,23 +69,24 @@ int switchValueRaw(int switchNum)
 //updates the current switch event values
 void switchRead(void)
 {    
-    if((switchShadow&0b10) != SW_1_STATE){
+    if((switchShadow[1]) != SW_1_STATE){
         if(SW_1_STATE){
             switchEvents |= 0b0010;
         } else {
             switchEvents |= 0b1000;
         }
+        switchShadow[1] = SW_1_STATE;
     }
     
-    if((switchShadow&0b1) != SW_0_STATE){
+    if((switchShadow[0]) != SW_0_STATE){
         if(SW_0_STATE){
             switchEvents |= 0b0001;
         } else {
             switchEvents |= 0b0100;
         }
+        switchShadow[0] = SW_0_STATE;
     }
     
-    switchShadow = (SW_1_STATE | SW_0_STATE);
     
     knobValues[0] = switchKnobValue(0)<<6;
     knobValues[1] = switchKnobValue(1)<<6;  

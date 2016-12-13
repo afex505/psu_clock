@@ -3,12 +3,12 @@
 #include "uart.h"
 
 void uartInit(void)
-{
-    //UART2 is on RF0 (was RC9)
-    TRISFbits.TRISF0 = 0;
-    ANSELFbits.ANSF0 = 0;
+{   
+    UART_TRIS = 0;
+    UART_ANSEL_DN();
+            
     
-    RPF0R = 0b0001; //U2TX
+    RP_UART = RP_U2TX; //U2TX
     U2MODE = (1<<15)|(1<<3); //ON|BRGH
     U2STA = (0b10<<14)|(1<<10);// UTXEN
             //int generated when buffer empty

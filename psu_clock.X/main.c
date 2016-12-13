@@ -6,7 +6,7 @@
  */
 #include "main.h"
 
-
+#if defined(__32MX430F064H__)
 // DEVCFG3
 // USERID = No Setting
 #pragma config PMDL1WAY = OFF           // Peripheral Module Disable Configuration (Allow multiple reconfigurations)
@@ -41,7 +41,43 @@
 #pragma config BWP = OFF                // Boot Flash Write Protect bit (Protection Disabled)
 #pragma config CP = OFF                 // Code Protect (Protection Disabled)
 #pragma config DEBUG = ON
+#else
 
+// DEVCFG3
+// USERID = No Setting
+#pragma config PMDL1WAY = OFF           // Peripheral Module Disable Configuration (Allow multiple reconfigurations)
+#pragma config IOL1WAY = OFF            // Peripheral Pin Select Configuration (Allow multiple reconfigurations)
+#pragma config FUSBIDIO = ON            // USB USID Selection (Controlled by the USB Module)
+#pragma config FVBUSONIO = ON           // USB VBUS ON Selection (Controlled by USB Module)
+
+// DEVCFG2
+#pragma config FPLLIDIV = DIV_2         // PLL Input Divider (2x Divider)
+#pragma config FPLLMUL = MUL_20         // PLL Multiplier (20x Multiplier)
+#pragma config UPLLIDIV = DIV_2         // USB PLL Input Divider (2x Divider)
+#pragma config UPLLEN = OFF             // USB PLL Enable (Disabled and Bypassed)
+#pragma config FPLLODIV = DIV_2         // System PLL Output Clock Divider (PLL Divide by 2)
+
+// DEVCFG1
+#pragma config FNOSC = PRIPLL           // Oscillator Selection Bits (Primary Osc w/PLL (XT+,HS+,EC+PLL))
+#pragma config FSOSCEN = ON             // Secondary Oscillator Enable (Enabled)
+#pragma config IESO = OFF               // Internal/External Switch Over (Disabled)
+#pragma config POSCMOD = XT             // Primary Oscillator Configuration (XT osc mode)
+#pragma config OSCIOFNC = OFF           // CLKO Output Signal Active on the OSCO Pin (Disabled)
+#pragma config FPBDIV = DIV_1//DIV_1           // Peripheral Clock Divisor (Pb_Clk is Sys_Clk/1)
+#pragma config FCKSM = CSDCMD           // Clock Switching and Monitor Selection (Clock Switch Disable, FSCM Disabled)
+#pragma config WDTPS = PS1048576        // Watchdog Timer Postscaler (1:1048576)
+#pragma config WINDIS = OFF             // Watchdog Timer Window Enable (Watchdog Timer is in Non-Window Mode)
+#pragma config FWDTEN = ON              // Watchdog Timer Enable (WDT Enabled)
+#pragma config FWDTWINSZ = WINSZ_25     // Watchdog Timer Window Size (Window Size is 25%)
+
+// DEVCFG0
+#pragma config JTAGEN = OFF              // JTAG Enable (JTAG Port Enabled)
+#pragma config ICESEL = ICS_PGx1        // ICE/ICD Comm Channel Select (Communicate on PGEC1/PGED1)
+#pragma config PWP = OFF                // Program Flash Write Protect (Disable)
+#pragma config BWP = OFF                // Boot Flash Write Protect bit (Protection Disabled)
+#pragma config CP = OFF                 // Code Protect (Protection Disabled)
+
+#endif
 
 int gTimer;
 int clkPulse;
@@ -84,13 +120,13 @@ int main(int argc, char** argv) {
        
         if(clkPulse) {
             clkPulse = 0;
-            LATC = (gTimer<<3) & 0b01111000;    
-            UART_print_str("Knobs: ");
-            UART_print_hex(16,getKnob(0));
-            UART_print_str("/");
-            UART_print_hex(16,getKnob(1));
-            UART_print_str("\t");
-            UART_print_str("\r\n");
+//            LATC = (gTimer<<3) & 0b01111000;    
+//            UART_print_str("Knobs: ");
+//            UART_print_hex(16,getKnob(0));
+//            UART_print_str("/");
+//            UART_print_hex(16,getKnob(1));
+//            UART_print_str("\t");
+//            UART_print_str("\r\n");
         }
         
         
@@ -105,8 +141,8 @@ int main(int argc, char** argv) {
                 break;
             case sm_init:
                 UART_print_str("Hello, i'm clocky!\r\n");
-                rtccSetMin(45);
-                rtccSetHr(12);
+        
+
                 if(switchValueRaw(1)) {
                     next_state = sm_trans_to_clk;
                 } else {
@@ -125,19 +161,12 @@ int main(int argc, char** argv) {
  
                 
                 if(switchEvents & 0b01)   {
-                    
-                    
                     gaugeLight++;
                     tlcClr();
                     tlcSetChannel((gaugeLight&0xf),0xfff);
                     tlcAssemble(0xffff);
                     tlcUpdate();
-                    
-                    
                 }
-                
-
-                
                 
                 
                 if(switchValueRaw(1)) {
@@ -212,10 +241,7 @@ int main(int argc, char** argv) {
                     //shift the registers around
                     tlcUpdate();
                 }
-            
-               
-                
-                
+
                 if(switchValueRaw(1) == 0) {
                     next_state = sm_leaving_clk;
                 } else {
@@ -225,7 +251,7 @@ int main(int argc, char** argv) {
             case sm_leaving_clk:
                 next_state = sm_trans_to_cal;
                 break;
-            default: 
+            default:
                 next_state = sm_init;
                 break;        
         }
@@ -254,6 +280,9 @@ void init(void)
     rtccInit();
     switchInit();
     tlcInit();
+#if defined(__32MX250F128D__)
+    dacInit();
+#endif
     
     initTMR();
 }
@@ -261,10 +290,21 @@ void init(void)
 void initTMR(void)
 {
     //setup timer1 to go off every second
-    T1CONbits.TCS = 1; //1=source is ext crystal
+    
+   
+    
+#if defined(__32MX430F064H__)
     OSCCONbits.SOSCEN = 1;
+    T1CONbits.TCS = 0; //1=source is pbclk
+    T1CONbits.TCKPS = 0b11; //1:256
+    PR1 = 31250;
+    PR1=0xffff;
+#else
+    OSCCONbits.SOSCEN = 1;
+    T1CONbits.TCS = 1; //1=source is ext crystal
     T1CONbits.TCKPS = 0;
-    PR1 = 32768;
+    PR1 = 32768;    
+#endif
     IFS0bits.T1IF = 0;
     IEC0bits.T1IE = 1;
     IPC1bits.T1IP = 1;

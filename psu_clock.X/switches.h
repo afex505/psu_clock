@@ -17,23 +17,18 @@
 #define KNOBA 1
 #define KNOBTRM 2
 
-#define KNOBV_ADCCH 5
-#define KNOBA_ADCCH 24
-#define KNOBTRM_ADCCH 4
 
-    //SWLIM  SW2   RE0 / io1
-    //SWPOW  SW1   RE1
 
-#define SW_0_STATE ((PORTE&0b10)<<0)
-#define SW_1_STATE ((PORTE&0b1)<<1)
+
+#if defined(__32MX430F064H__)
+#define SW_0_STATE ((PORTE&0b10)&&1)
+#define SW_1_STATE ((PORTE&0b01)&&1)
 #define SW_GPIO_INIT() { \
     TRISESET = (1<<1);\
     ANSELECLR = (1<<1); \
     TRISESET = (1<<0); \
     ANSELECLR = (1<<0); \
     }
-
-
     //KNOBV     RB3     AN5
     //KNOBA     RD1 AN24      RC0     AN6
     //KNOBTRIM  RB2     AN4
@@ -43,6 +38,34 @@
     ANSELDSET = (1<<1); \
     TRISDSET = (1<<1); \
     }
+
+    #define KNOBV_ADCCH 5
+    #define KNOBA_ADCCH 24
+    #define KNOBTRM_ADCCH 4
+#else //MX250
+#define SW_0_STATE ((PORTC&0b010)&&1)
+#define SW_1_STATE ((PORTC&0b100)&&1)
+#define SW_GPIO_INIT() { \
+    TRISCSET = (1<<1);\
+    ANSELCCLR = (1<<1); \
+    TRISCSET = (1<<2); \
+    ANSELCCLR = (1<<2); \
+    }
+    //KNOBV     RB3     AN5
+    //KNOBA     RD1 AN24      RC0     AN6
+    //KNOBTRIM  RB2     AN4
+#define KNOB_GPIO_INIT() { \
+    ANSELBSET = (1<<3)|(1<<2); \
+    TRISBSET = (1<<3)|(1<<2); \
+    ANSELCSET = (1<<0); \
+    TRISCSET = (1<<0); \
+    }
+
+    #define KNOBV_ADCCH 5
+    #define KNOBA_ADCCH 6
+    #define KNOBTRM_ADCCH 4
+#endif
+
 
 void switchInit(void);
 int switchKnobValue(int channel);

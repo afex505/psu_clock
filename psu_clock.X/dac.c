@@ -41,6 +41,7 @@ void dacInit(void)
     
     dacSet(0,0);
     dacSet(0,1);
+    dacLoad();
 }
 
 

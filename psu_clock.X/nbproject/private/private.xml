@@ -6,6 +6,9 @@
         <group>
             <file>file:/C:/dev/psu_clock_standalone/psu_clock.X/uart.c</file>
             <file>file:/C:/dev/psu_clock_standalone/psu_clock.X/switches.c</file>
+            <file>file:/C:/dev/psu_clock_standalone/psu_clock.X/main.h</file>
+            <file>file:/C:/dev/psu_clock_standalone/psu_clock.X/uart.h</file>
+            <file>file:/C:/dev/psu_clock_standalone/psu_clock.X/switches.h</file>
             <file>file:/C:/dev/psu_clock_standalone/psu_clock.X/main.c</file>
             <file>file:/C:/dev/psu_clock_standalone/psu_clock.X/tlc.c</file>
             <file>file:/C:/dev/psu_clock_standalone/psu_clock.X/tlc.h</file>

@@ -1,5 +1,4 @@
 
-#include <proc/p32mx430f064h.h>
 #include "tlc.h"
 
 
@@ -27,9 +26,8 @@ void tlcInit(void)
     //setup our clocks
     
     //GSCLK, fast (1Mhz?) OC2
-    TRISDbits.TRISD0 = 0;
-    
-    RPD0R = 0b1011;   //OC2 muxed
+    GSCLK_TRIS = 0;
+    RP_GSCLK = RP_OC2;   //OC2 muxed
     OC2CON = 0x0000; // Turn off the OC2 when performing the setup
     OC2R = 0x0004; // Initialize primary Compare register
     OC2RS = 0x0004; // Initialize secondary Compare register
@@ -43,8 +41,8 @@ void tlcInit(void)
     
     
     //BLANK clock, timer is TMR2*4096
-    TRISDbits.TRISD8 = 0;
-    RPD8R = 0b1100; //OC1 muxed
+    BLANK_TRIS = 0;
+    RP_BLANK = RP_OC1; //OC1 muxed
     
     OC1CON = 0x0000; // Turn off the OC2 when performing the setup
     OC1R =  0x0002; // Initialize primary Compare register
@@ -60,13 +58,11 @@ void tlcInit(void)
     
     
     //setup SPI
-    // SDO      RB8 (SDO1)
-    // SCK      RD2 (SCK1))
-    TRISBCLR = (1<<8);
-    TRISDCLR = (1<<2);
-    ANSELDCLR = (1<<2);
-    ANSELBCLR = (1<<8);
-    RPB8R = 0b1000; //set RB8 to SDO1
+    SDO1_TRIS = 0;
+    SDO1_ANSEL_DN();
+    SCK1_TRIS = 0;
+    SCK1_ANSEL_DN();
+    RP_SDO = RP_SDO1; //set RB8 to SDO1
 
     //setup SP1
     SPI1CONbits.MODE32 = 1;
@@ -75,7 +71,7 @@ void tlcInit(void)
     SPI1CONbits.ENHBUF = 1;
     SPI1CONbits.CKE = 1;
 
-    SPI1BRG=0x40; // use FPB/4 clock frequency
+    SPI1BRG=0x8; // use FPB/4 clock frequency
     SPI1STATCLR=0x20; // clear the Overflow
    
     //setup Interrupt to fire when empty, but DO NOT ENABLE (we do this when we write))
@@ -87,7 +83,7 @@ void tlcInit(void)
     SPI1CONbits.ON = 1;      
     
     //setup XLAT
-    TRISDbits.TRISD9 = 0;
+    XLAT_TRIS = 0;
     XLAT_UP();
     
     //setup XERR
