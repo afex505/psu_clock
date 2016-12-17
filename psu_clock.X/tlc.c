@@ -125,7 +125,7 @@ void tlcSetChannel(int channel, int value)
     values[channel] = lookup[value>>4]<<4;
     
 #else
-    values[channel] = value&0xfff;
+    values[channel] = value>>4;
 #endif
 }
 

@@ -61,7 +61,6 @@ enum state{
     sm_trans_to_clk,    //f
     sm_clk,             //g
     sm_leaving_clk,     //h
-    sm_stall
 };
 
 void init(void);

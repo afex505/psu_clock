@@ -157,16 +157,8 @@ int main(int argc, char** argv) {
                 break;
             case sm_cal:
                 
-                //for now, map knobs to gauges
- 
                 
-                if(switchEvents & 0b01)   {
-                    gaugeLight++;
-                    tlcClr();
-                    tlcSetChannel((gaugeLight&0xf),0xfff);
-                    tlcAssemble(0xffff);
-                    tlcUpdate();
-                }
+                taskCal();
                 
                 
                 if(switchValueRaw(1)) {
@@ -176,71 +168,13 @@ int main(int argc, char** argv) {
                 }
                 break;
             case sm_trans_to_clk:
-                
+                taskInitClock();
                 UART_print_str("sm_trans_to_clk\r\n");
                 tlcClr();
                 next_state = sm_clk;
                 break;
             case sm_clk:
-                
-                
-                if(switchEvents & 0b01) {
-                    currentLED++;
-                    if(currentLED>7) {
-                        currentLED = 0;
-                    }
-                    knobShadow = getKnob(1);
-                    UART_print_str("currentLED ");
-                    UART_print_hex(8,currentLED);
-                    UART_print_str("\r\n");
-                    changing = 0;
-                }
-                
-                if(!changing) {
-                    if(abs(getKnob(1) - knobShadow) > 0x400) {
-                        changing = 1;
-                        UART_print_str("changing!\r\n");
-                    }
-                }
-                
-                if(changing) {
-                    tlcSetChannel(currentLED,getKnob(1)>>4);
-                }
-                
-                
-                
-//                tlcSetChannel(0,0x0000);
-//                tlcSetChannel(1,0x1111);
-//                tlcSetChannel(2,0x2222);
-//                tlcSetChannel(3,0x3333);
-//                tlcSetChannel(4,0x4444);
-//                tlcSetChannel(5,0x5555);
-//                tlcSetChannel(6,0x6666);
-//                tlcSetChannel(7,0x7777);
-//                tlcSetChannel(8,0x8888);
-//                tlcSetChannel(9,0x9999);
-//                tlcSetChannel(0xa,0xaaaa);
-//                tlcSetChannel(0xb,0xbbbb);
-//                tlcSetChannel(0xc,0xcccc);
-//                tlcSetChannel(0xd,0xdddd);
-//                tlcSetChannel(0xe,0xeeee);
-//                tlcSetChannel(0xf,0xffff);
-
-                
-//                if(changing) {
-//                    for(i = 0; i < 16; i++) {
-//                        tlcSetChannel(i,getKnob(1)>>4);
-//                    }
-//                }
-                
-                
-                
-                
-                tlcAssemble(0xffff);
-                if(clkPulseFlag || 0) {
-                    //shift the registers around
-                    tlcUpdate();
-                }
+                taskClock();
 
                 if(switchValueRaw(1) == 0) {
                     next_state = sm_leaving_clk;
@@ -249,7 +183,12 @@ int main(int argc, char** argv) {
                 }
                 break;
             case sm_leaving_clk:
+                UART_print_str("sm_leaving_clk\r\n");
                 next_state = sm_trans_to_cal;
+                break;
+            case sm_leaving_cal:
+                UART_print_str("sm_leaving_cal\r\n");
+                next_state = sm_trans_to_clk;
                 break;
             default:
                 next_state = sm_init;
@@ -267,6 +206,54 @@ int main(int argc, char** argv) {
     
     return (EXIT_SUCCESS);
 }
+
+
+void taskClock(void)
+{
+    //display the time
+    dacSet(rtccSec()*0x10000/60,0);
+    dacSet(rtccMin()*0x10000/60,1);
+    dacLoad();
+    
+    //change options...
+    
+    const int ledLevel = switchKnobValue(0);
+    tlcSetChannel(8,ledLevel);
+    tlcSetChannel(9,ledLevel);
+    tlcSetChannel(10,ledLevel);
+    tlcSetChannel(11,ledLevel);
+    tlcAssemble(0b11110000000);
+    tlcUpdate();
+    
+}
+
+void taskInitClock(void)
+{
+    
+    
+    
+}
+
+void taskCal(void)
+{
+    rtccSetMin((60*switchKnobValue(0))/0x10000);
+    rtccSetHr((12*switchKnobValue(1))/0x10000);
+    
+    dacSet(rtccMin()*0x10000/60,0);
+    dacSet(rtccHr()*0x10000/12,1);
+    dacLoad();
+    
+    if(clkPulse)
+    {
+    UART_print_hex(16,switchKnobValue(0));
+    UART_print_str("\r\n");
+    UART_print_hex(16,switchKnobValue(1));
+    UART_print_str("\r\n");
+    }
+    
+    
+}
+
 
 
 void init(void)
@@ -314,7 +301,7 @@ void initTMR(void)
     
     //setup timer4 to go off every 50msec
     T4CONbits.TCKPS = 0b111;
-    PR4 = 0x1000; //approx 50 msec
+    PR4 = 5*0x1000; //0x1000 = approx 50 msec
     TMR4 = 0;
     
     IFS0bits.T4IF = 0;

@@ -51,7 +51,7 @@ int switchKnobValue(int channel)
     
     //return the result
     
-    return ADC1BUF0;   
+    return ADC1BUF0*0x40;   
 }
 
 
@@ -59,11 +59,7 @@ int switchKnobValue(int channel)
 //also logic flips them (PWR switch is active low) if they need it
 int switchValueRaw(int switchNum)
 {
-    if(switchNum) {
-        return (SW_1_STATE);
-    } else {
-        return (SW_0_STATE);
-    }
+    return switchShadow[switchNum];
 }
 
 //updates the current switch event values
