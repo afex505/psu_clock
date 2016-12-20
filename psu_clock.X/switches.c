@@ -6,6 +6,8 @@ static int knobValues[2];
 static int switchShadow[2];
 static uint8_t switchEvents = 0;
 
+static int swBUffered[2];
+
 
 void switchInit(void)
 {
@@ -17,16 +19,24 @@ void switchInit(void)
     AD1CON3bits.SAMC = 0b11111;//31tad
     AD1CON1bits.ON = 1; 
     
-    switchShadow[0] = SW_0_STATE;
-    switchShadow[1] = SW_1_STATE;
-    
+
+    switchRead();
+    switchShadow[0] = sw_Buffered[0];
+    switchShadow[1] = sw_Buffered[1];
 }
 
-int getKnob(int channel)
+int switchGetKnob(int channel)
 {
     return (knobValues[channel]);
 }
 
+int switchGet(void)
+{
+    return switchStates;
+}
+
+
+//runs ADC Conversion
 int switchKnobValue(int channel)
 {
     switch(channel){
@@ -50,53 +60,93 @@ int switchKnobValue(int channel)
     while(!(AD1CON1&(0b1))){}; //wait for DONE
     
     //return the result
-    
     return ADC1BUF0*0x40;   
 }
 
 
-//returns a raw (but debounced!) value of the switches
-//also logic flips them (PWR switch is active low) if they need it
-int switchValueRaw(int switchNum)
-{
-    return switchShadow[switchNum];
-}
 
-//updates the current switch event values
-void switchRead(void)
+//run this function at the top of each superloop, it
+//latches in new vales
+void switchLatch(void)
 {    
-    if((switchShadow[1]) != SW_1_STATE){
+    //clear old events
+    switchStates = 0;
+
+    //check for changes
+    if((switchShadow[1]) != sw_Buffered[1]){
         if(SW_1_STATE){
-            switchEvents |= 0b0010;
+            switchStates |= 0b001000;
         } else {
-            switchEvents |= 0b1000;
+            switchStates |= 0b100000;
         }
-        switchShadow[1] = SW_1_STATE;
+        switchShadow[1] = sw_Buffered[1];
     }
     
-    if((switchShadow[0]) != SW_0_STATE){
+    if((switchShadow[0]) != sw_Buffered[0]){
         if(SW_0_STATE){
-            switchEvents |= 0b0001;
+            switchStates |= 0b000100;
         } else {
-            switchEvents |= 0b0100;
+            switchStates |= 0b010000;
         }
-        switchShadow[0] = SW_0_STATE;
+        switchShadow[0] = sw_Buffered[0];
     }
-    
-    
-    knobValues[0] = switchKnobValue(0)<<6;
-    knobValues[1] = switchKnobValue(1)<<6;  
-    
+
+    //latch in new realtime values
+    if(sw_Buffered[0])
+        switchStates |= 0b01;
+
+    if(sw_Buffered[1])
+        switchStates |= 0b10;
+
     return;
 }
 
-int switchGetEvents(void)
+//run this function only as needed, it actually polls
+//switches and runs ADC on knobs
+void switchRead(void)
 {
-    //this is super hacky but it's early in the morning...
-    int switchReturn = switchEvents;
-    switchEvents = 0;
-    return switchReturn;
+    sw_Buffered[0] = SW_0_STATE;
+    sw_Buffered[1] = SW_1_STATE;
+
+
+    //50/50 IIR for a little smoothing
+    knobValues[0] += switchKnobValue(0)<<6;
+    knobValues[1] += switchKnobValue(1)<<6;  
+
+    knobValues[0] >>= 1;
+    knobValues[1] >>= 1;
+
+    return;
 }
 
 
+int virtualKnob = 0;
+int virtualKnobShadow = 0;
+
+int switchVirtGet(void)
+{
+    int change;
+
+    virtKnob += switchGetKnob(0) - virtualKnobShadow;
+
+    //bounds check
+    if(virtKnob > 0xffff)
+        virtKnob  = 0xffff;
+    else if(virtKnob < 0)
+        virtKnob = 0;
+
+    virtKnobShadow = switchGetKnob(0);
+
+}
+
+int switchVirtLatch(void)
+{
+
+}
+
+void switchVertSet(int value)
+{
+    virtKnob = value;
+    virtKnobShadow = value;
+}
 

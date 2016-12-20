@@ -18,7 +18,7 @@
 #include "dac.h"
 #include "switches.h"
 #include <sys/attribs.h>
-
+#include "settings.h"
 
 
 #define IFS0_T1IF (1<<4)

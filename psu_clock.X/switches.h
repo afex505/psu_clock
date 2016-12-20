@@ -68,8 +68,21 @@
 
 
 void switchInit(void);
+
+void switchLatch(void);
+void switchRead(void);
 int switchKnobValue(int channel);
-int switchValues(void);
+
+int switchGet(void);
+int switchGetKnob(int channel)
+
+
+//the 'virtual encoder' allows us to 
+//use the 11 turn voltage pot almost as 
+//an infinitely rotatable encoder
+
+int switchVirtGet(void);
+void switchVertSet(int value);
 
 #endif	/* SWITCHES_H */
 

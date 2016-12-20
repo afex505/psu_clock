@@ -85,7 +85,6 @@ int clkPulseFlag;
 int bufferTimer;
 
 
-
 enum state curr_state = sm_init;
 enum state next_state = sm_undefined;
 /*
@@ -100,11 +99,6 @@ int main(int argc, char** argv) {
     uint8_t switchEvents=0;
     int i=0;
     int j=0;
-    int knobShadow;
-    int currentLED = 0;
-    int gaugeLight = 0;
-    int gaugeBin = 0x1;
-    int changing;
     
     init();
     
@@ -112,7 +106,7 @@ int main(int argc, char** argv) {
     LEDTRISCLR = LEDMASK;
     for(;;) {
         WDTCONCLR = 0x8000;
-        switchEvents = switchGetEvents(); //lock in latest switch events
+        switchLatch();
         
         clkPulseFlag = clkPulse;
             
@@ -130,7 +124,6 @@ int main(int argc, char** argv) {
         }
         
         
-        
         //Main state machine
         next_state = sm_undefined;
         //UART_putc((char)((int)curr_state+0x61));
@@ -141,42 +134,32 @@ int main(int argc, char** argv) {
                 break;
             case sm_init:
                 UART_print_str("Hello, i'm clocky!\r\n");
-        
-
-                if(switchValueRaw(1)) {
-                    next_state = sm_trans_to_clk;
-                } else {
-                    next_state = sm_trans_to_cal;
-                }
+                next_state = sm_trans_to_clk;
                 break;
             case sm_trans_to_cal:
                 UART_print_str("sm_trans_to_cal\r\n");
-                tlcClr();
-                gaugeLight = 0;
+                taskCalInit();
+            
                 next_state = sm_cal;
                 break;
             case sm_cal:
-                
-                
                 taskCal();
-                
-                
-                if(switchValueRaw(1)) {
+
+                if(switchGet(1)) {
                     next_state = sm_leaving_cal;
                 } else {
                     next_state = sm_cal;
                 }
                 break;
             case sm_trans_to_clk:
-                taskInitClock();
+                taskClockInit();
                 UART_print_str("sm_trans_to_clk\r\n");
-                tlcClr();
                 next_state = sm_clk;
                 break;
             case sm_clk:
                 taskClock();
 
-                if(switchValueRaw(1) == 0) {
+                if(switchGet(1) == 0) {
                     next_state = sm_leaving_clk;
                 } else {
                     next_state = sm_clk;
@@ -208,6 +191,15 @@ int main(int argc, char** argv) {
 }
 
 
+
+void taskInitClock(void)
+{
+    
+    
+    
+}
+
+
 void taskClock(void)
 {
     //display the time
@@ -227,13 +219,15 @@ void taskClock(void)
     
 }
 
-void taskInitClock(void)
-{
-    
-    
-    
-}
 
+
+void taskInitCal(void)
+{
+    //setup cal state machine
+
+
+
+}
 void taskCal(void)
 {
     rtccSetMin((60*switchKnobValue(0))/0x10000);
