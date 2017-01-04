@@ -10,6 +10,7 @@
       <itemPath>switches.h</itemPath>
       <itemPath>tlc.h</itemPath>
       <itemPath>dac.h</itemPath>
+      <itemPath>settings.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -24,6 +25,7 @@
       <itemPath>switches.c</itemPath>
       <itemPath>tlc.c</itemPath>
       <itemPath>dac.c</itemPath>
+      <itemPath>settings.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

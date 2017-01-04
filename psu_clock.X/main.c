@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
                 }
                 break;
             case sm_trans_to_clk:
-                taskClockInit();
+                taskInitClock();
                 UART_print_str("sm_trans_to_clk\r\n");
                 next_state = sm_clk;
                 break;
@@ -219,34 +219,6 @@ void taskClock(void)
     
 }
 
-
-
-void taskInitCal(void)
-{
-    //setup cal state machine
-
-
-
-}
-void taskCal(void)
-{
-    rtccSetMin((60*switchKnobValue(0))/0x10000);
-    rtccSetHr((12*switchKnobValue(1))/0x10000);
-    
-    dacSet(rtccMin()*0x10000/60,0);
-    dacSet(rtccHr()*0x10000/12,1);
-    dacLoad();
-    
-    if(clkPulse)
-    {
-    UART_print_hex(16,switchKnobValue(0));
-    UART_print_str("\r\n");
-    UART_print_hex(16,switchKnobValue(1));
-    UART_print_str("\r\n");
-    }
-    
-    
-}
 
 
 

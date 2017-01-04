@@ -67,6 +67,8 @@ void init(void);
 
 void initTMR(void);
 
+void taskClock(void);
+void taskInitClock(void);
 
 inline unsigned int __attribute__((always_inline)) SYSTEMConfigPerformance(unsigned int);
         

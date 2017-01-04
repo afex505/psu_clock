@@ -2,7 +2,23 @@
 
 
 
-settingsGroup_t currentSettingGroup;
+enum settingsGroup_t currentSettingGroup;
+
+
+struct settings {
+	//main settings
+	enum gaugeModes_t gMode;
+	enum gaugeLEDModes_t glMode;
+	enum frontLEDModes_t flMode;
+	
+	//settings for each mode
+	int gl_lrWave_width;
+	int gl_shakiness;
+	int gl_pulseLow;
+
+	int sm_secondDuration;
+	int sm_shakiness;
+};
 
 
 void taskCal(void)
@@ -11,18 +27,16 @@ void taskCal(void)
 
 	//do different stuff based on the current setting group
 
-	switch currentSettingGroup{
+	switch(currentSettingGroup){
 
 
 			case set_clock:
 
-				rtcc
-
 
 				break;
 			case set_gaugeLED:
 				break;
-			case set_gaugeLED:
+			case set_gaugeMode:
 				break;
 			case set_LED:
 				break;

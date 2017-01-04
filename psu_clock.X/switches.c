@@ -6,8 +6,11 @@ static int knobValues[2];
 static int switchShadow[2];
 static uint8_t switchEvents = 0;
 
-static int swBUffered[2];
+static int swBuffered[2];
+static int switchStates;
 
+static int virtKnob;
+static int virtKnobShadow;
 
 void switchInit(void)
 {
@@ -21,8 +24,8 @@ void switchInit(void)
     
 
     switchRead();
-    switchShadow[0] = sw_Buffered[0];
-    switchShadow[1] = sw_Buffered[1];
+    switchShadow[0] = swBuffered[0];
+    switchShadow[1] = swBuffered[1];
 }
 
 int switchGetKnob(int channel)
@@ -30,9 +33,12 @@ int switchGetKnob(int channel)
     return (knobValues[channel]);
 }
 
-int switchGet(void)
+int switchGet(int mask)
 {
-    return switchStates;
+    if(mask)
+        return switchStates|mask;
+    else
+        return switchStates;
 }
 
 
@@ -73,29 +79,29 @@ void switchLatch(void)
     switchStates = 0;
 
     //check for changes
-    if((switchShadow[1]) != sw_Buffered[1]){
+    if((switchShadow[1]) != swBuffered[1]){
         if(SW_1_STATE){
             switchStates |= 0b001000;
         } else {
             switchStates |= 0b100000;
         }
-        switchShadow[1] = sw_Buffered[1];
+        switchShadow[1] = swBuffered[1];
     }
     
-    if((switchShadow[0]) != sw_Buffered[0]){
+    if((switchShadow[0]) != swBuffered[0]){
         if(SW_0_STATE){
             switchStates |= 0b000100;
         } else {
             switchStates |= 0b010000;
         }
-        switchShadow[0] = sw_Buffered[0];
+        switchShadow[0] = swBuffered[0];
     }
 
     //latch in new realtime values
-    if(sw_Buffered[0])
+    if(swBuffered[0])
         switchStates |= 0b01;
 
-    if(sw_Buffered[1])
+    if(swBuffered[1])
         switchStates |= 0b10;
 
     return;
@@ -105,8 +111,8 @@ void switchLatch(void)
 //switches and runs ADC on knobs
 void switchRead(void)
 {
-    sw_Buffered[0] = SW_0_STATE;
-    sw_Buffered[1] = SW_1_STATE;
+    swBuffered[0] = SW_0_STATE;
+    swBuffered[1] = SW_1_STATE;
 
 
     //50/50 IIR for a little smoothing
@@ -126,6 +132,8 @@ int virtualKnobShadow = 0;
 int switchVirtGet(void)
 {
     int change;
+    
+
 
     virtKnob += switchGetKnob(0) - virtualKnobShadow;
 
@@ -136,7 +144,8 @@ int switchVirtGet(void)
         virtKnob = 0;
 
     virtKnobShadow = switchGetKnob(0);
-
+    
+    return virtKnob;
 }
 
 int switchVirtLatch(void)

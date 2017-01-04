@@ -73,8 +73,8 @@ void switchLatch(void);
 void switchRead(void);
 int switchKnobValue(int channel);
 
-int switchGet(void);
-int switchGetKnob(int channel)
+int switchGet(int mask);
+int switchGetKnob(int channel);
 
 
 //the 'virtual encoder' allows us to 
