@@ -28,17 +28,17 @@ void switchInit(void)
     switchShadow[1] = swBuffered[1];
 }
 
-int switchGetKnob(int channel)
+int inline switchGetKnob(int channel)
 {
     return (knobValues[channel]);
 }
 
-int switchGet(int mask)
+int inline switchGet(int mask)
 {
     if(mask)
-        return switchStates|mask;
+        return (switchStates&mask);
     else
-        return switchStates;
+        return (switchStates);
 }
 
 
@@ -66,7 +66,11 @@ int switchKnobValue(int channel)
     while(!(AD1CON1&(0b1))){}; //wait for DONE
     
     //return the result
-    return ADC1BUF0*0x40;   
+    if(channel == KNOBV)
+    {
+        return 0x400-ADC1BUF0;
+    }
+    return ADC1BUF0;   
 }
 
 
@@ -114,14 +118,18 @@ void switchRead(void)
     swBuffered[0] = SW_0_STATE;
     swBuffered[1] = SW_1_STATE;
 
-
+    int i;
     //50/50 IIR for a little smoothing
-    knobValues[0] += switchKnobValue(0)<<6;
-    knobValues[1] += switchKnobValue(1)<<6;  
-
-    knobValues[0] >>= 1;
-    knobValues[1] >>= 1;
-
+    
+   
+    for(i = 0; i < 2; i++) {
+//        knobValues[i] *= 3;    
+//        knobValues[i] += switchKnobValue(i)<<6;
+//        knobValues[i] >>= 2;
+        knobValues[i] *= 1;    
+        knobValues[i] += switchKnobValue(i)<<6;
+        knobValues[i] >>= 1;
+    }
     return;
 }
 
@@ -132,8 +140,6 @@ int virtualKnobShadow = 0;
 int switchVirtGet(void)
 {
     int change;
-    
-
 
     virtKnob += switchGetKnob(0) - virtualKnobShadow;
 

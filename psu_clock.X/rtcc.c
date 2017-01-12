@@ -56,15 +56,15 @@ void __ISR(_RTCC_VECTOR, IPL3AUTO) __RTCCInterrupt(void)
     
     //LATCINV = 0xff;
 }
-int rtccSec()
+int inline rtccSec()
 {
     return ((RTCTIMEbits.SEC01) + (RTCTIMEbits.SEC10*10));
 }
-int rtccMin()
+int inline rtccMin()
 {
     return ((RTCTIMEbits.MIN01) + (RTCTIMEbits.MIN10*10));
 }
-int rtccHr()
+int inline rtccHr()
 {
     return ((RTCTIMEbits.HR01) + (RTCTIMEbits.HR10*10));
 }

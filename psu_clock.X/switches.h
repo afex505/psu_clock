@@ -44,7 +44,15 @@
     #define KNOBTRM_ADCCH 4
 #else //MX250
 #define SW_0_STATE ((PORTC&0b010)&&1)
-#define SW_1_STATE ((PORTC&0b100)&&1)
+#define SW_1_STATE (!(PORTC&0b100))
+
+#define SW_MASK_POWER       0b000010
+#define SW_MASK_LIMIT       0b000001
+#define SW_MASK_POWER_DN    0b001000
+#define SW_MASK_LIMIT_DN    0b000100
+#define SW_MASK_POWER_UP    0b100000
+#define SW_MASK_LIMIT_UP    0b010000
+
 #define SW_GPIO_INIT() { \
     TRISCSET = (1<<1);\
     ANSELCCLR = (1<<1); \

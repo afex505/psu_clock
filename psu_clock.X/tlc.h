@@ -12,6 +12,15 @@
 #include <xc.h>
 #include "plib.h" 
 
+#define GAUGE1 8
+#define GAUGE2 9
+#define GAUGE3 11
+#define GAUGE4 10
+
+
+
+
+
 #if defined(__32MX430F064H__)
     #define XLAT_DOWN() (LATDCLR = (1<<9))
     #define XLAT_UP() (LATDSET = (1<<9))

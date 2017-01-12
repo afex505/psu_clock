@@ -55,15 +55,24 @@
 #pragma config FPLLMUL = MUL_20         // PLL Multiplier (20x Multiplier)
 #pragma config UPLLIDIV = DIV_2         // USB PLL Input Divider (2x Divider)
 #pragma config UPLLEN = OFF             // USB PLL Enable (Disabled and Bypassed)
+#ifdef SLOW_DEBUG
+#pragma config FPLLODIV = DIV_4         // System PLL Output Clock Divider (PLL Divide by 2)
+#else
 #pragma config FPLLODIV = DIV_2         // System PLL Output Clock Divider (PLL Divide by 2)
+#endif
+
 
 // DEVCFG1
-#pragma config FNOSC = PRIPLL           // Oscillator Selection Bits (Primary Osc w/PLL (XT+,HS+,EC+PLL))
+#pragma config FNOSC = FRCPLL           // Oscillator Selection Bits (Primary Osc w/PLL (XT+,HS+,EC+PLL))
 #pragma config FSOSCEN = ON             // Secondary Oscillator Enable (Enabled)
 #pragma config IESO = OFF               // Internal/External Switch Over (Disabled)
 #pragma config POSCMOD = XT             // Primary Oscillator Configuration (XT osc mode)
 #pragma config OSCIOFNC = OFF           // CLKO Output Signal Active on the OSCO Pin (Disabled)
-#pragma config FPBDIV = DIV_1//DIV_1           // Peripheral Clock Divisor (Pb_Clk is Sys_Clk/1)
+#ifdef SLOW_DEBUG
+#pragma config FPBDIV = DIV_8          // Peripheral Clock Divisor (Pb_Clk is Sys_Clk/1)
+#else
+#pragma config FPBDIV = DIV_1           // Peripheral Clock Divisor (Pb_Clk is Sys_Clk/1)
+#endif
 #pragma config FCKSM = CSDCMD           // Clock Switching and Monitor Selection (Clock Switch Disable, FSCM Disabled)
 #pragma config WDTPS = PS1048576        // Watchdog Timer Postscaler (1:1048576)
 #pragma config WINDIS = OFF             // Watchdog Timer Window Enable (Watchdog Timer is in Non-Window Mode)
@@ -79,7 +88,7 @@
 
 #endif
 
-int gTimer;
+
 int clkPulse;
 int clkPulseFlag;
 int bufferTimer;
@@ -93,7 +102,7 @@ enum state next_state = sm_undefined;
 int main(int argc, char** argv) {
 
 
-    SYSTEMConfigPerformance(40000000);
+   // SYSTEMConfigPerformance(40000000);
     INTEnableSystemMultiVectoredInt();
 
     uint8_t switchEvents=0;
@@ -114,19 +123,32 @@ int main(int argc, char** argv) {
        
         if(clkPulse) {
             clkPulse = 0;
-//            LATC = (gTimer<<3) & 0b01111000;    
-//            UART_print_str("Knobs: ");
-//            UART_print_hex(16,getKnob(0));
-//            UART_print_str("/");
-//            UART_print_hex(16,getKnob(1));
-//            UART_print_str("\t");
-//            UART_print_str("\r\n");
+            LATC = (gTimer<<3) & 0b01111000;    
+
+            UART_putc((char)((int)curr_state+0x61));  
+            
+            UART_print_str("\tKnobs: ");
+            UART_print_hex(20,switchGetKnob(1));
+            UART_print_str("/");
+            UART_print_hex(20,switchGetKnob(0));
+            UART_print_str("\t");
+            
+             UART_print_str("Time: ");
+            UART_print_dec(2,rtccHr());
+            UART_print_str(":");
+            UART_print_dec(2,rtccMin());
+            UART_print_str(":");
+            UART_print_dec(2,rtccSec());
+            UART_print_str("\t");
+
+            UART_print_str("\r\n");
+//            UART_print_dec(0,switchGet(0));
         }
         
         
         //Main state machine
         next_state = sm_undefined;
-        //UART_putc((char)((int)curr_state+0x61));
+        
         switch(curr_state) {
             case sm_undefined:
                 UART_print_str("UNDEFINED STATE!\r\n");
@@ -145,7 +167,7 @@ int main(int argc, char** argv) {
             case sm_cal:
                 taskCal();
 
-                if(switchGet(1)) {
+                if(switchGet(2)) {
                     next_state = sm_leaving_cal;
                 } else {
                     next_state = sm_cal;
@@ -159,7 +181,7 @@ int main(int argc, char** argv) {
             case sm_clk:
                 taskClock();
 
-                if(switchGet(1) == 0) {
+                if(!switchGet(2)) {
                     next_state = sm_leaving_clk;
                 } else {
                     next_state = sm_clk;
@@ -244,18 +266,19 @@ void initTMR(void)
 {
     //setup timer1 to go off every second
     
-   
+    OSCCONbits.SOSCEN = 1;
     
 #if defined(__32MX430F064H__)
-    OSCCONbits.SOSCEN = 1;
     T1CONbits.TCS = 0; //1=source is pbclk
     T1CONbits.TCKPS = 0b11; //1:256
-    PR1 = 31250;
     PR1=0xffff;
+#elif defined (SLOW_DEBUG)
+    T1CONbits.TCS = 0; //1=source is pbclk
+    T1CONbits.TCKPS = 0b11; //1:256
+    PR1=32768;
 #else
-    OSCCONbits.SOSCEN = 1;
     T1CONbits.TCS = 1; //1=source is ext crystal
-    T1CONbits.TCKPS = 0;
+    T1CONbits.TCKPS = 0; // DUE TO ERRATA YOU CANNOT USE A PRESCALER w/ SOSC!
     PR1 = 32768;    
 #endif
     IFS0bits.T1IF = 0;
@@ -266,7 +289,11 @@ void initTMR(void)
     
     
     //setup timer4 to go off every 50msec
+#ifdef SLOW_DEBUG
+    T4CONbits.TCKPS = 0b110;
+#else
     T4CONbits.TCKPS = 0b111;
+#endif
     PR4 = 5*0x1000; //0x1000 = approx 50 msec
     TMR4 = 0;
     

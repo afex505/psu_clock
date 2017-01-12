@@ -63,7 +63,7 @@ int dacSet(int voltage, int channel)
     //11:0: voltage setting
     
     //wait for previous to go out
-    if(channel)
+    if(!channel)
         message |= (1<<15);
     message |= (voltage&0xfff);
     IFS1bits.SPI2TXIF = 0;

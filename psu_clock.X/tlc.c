@@ -52,8 +52,8 @@ void tlcInit(void)
     // enabled
     PR3 = (0x0008*1024)-1; // Set period
     T3CONbits.TCKPS = 0b010;  // 1:4 prescaler
-    // Configure Timer2
-    T3CONSET = 0x8000; // Enable Timer2
+    // Configure Timer3
+    T3CONSET = 0x8000; // Enable Timer3
     OC1CONSET = 0x8000; // Enable OC2
     
     
@@ -115,14 +115,14 @@ void tlcSetChannel(int channel, int value)
 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFD, 0xFD, 0xFD, 0xFD, 0xFD,
 0xFD, 0xFD, 0xFD, 0xFD, 0xFD, 0xFD, 0xFD, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF};
     
-    
-    if(value>0xfff)
-        value = 0xfff;
+    value &= 0xffff;
+    if(value>0xffff)
+        value = 0xffff;
     
     if(value < 0)
         value = 0;
     
-    values[channel] = lookup[value>>4]<<4;
+    values[channel] = lookup[value>>8]<<4;
     
 #else
     values[channel] = value>>4;

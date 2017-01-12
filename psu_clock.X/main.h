@@ -21,6 +21,9 @@
 #include "settings.h"
 
 
+//#define SLOW_DEBUG //use this to slow a 'second' down (except for RTCC)
+
+
 #define IFS0_T1IF (1<<4)
 #define IFS0_T4IF (1<<19)
 #define IFS0_T5IF (1<<24)
@@ -68,10 +71,7 @@ void init(void);
 void initTMR(void);
 
 void taskClock(void);
-void taskInitClock(void);
-
-inline unsigned int __attribute__((always_inline)) SYSTEMConfigPerformance(unsigned int);
-        
+void taskInitClock(void); 
 
 #endif	/* MAIN_H */
 

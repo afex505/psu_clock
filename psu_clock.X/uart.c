@@ -1,6 +1,7 @@
 
 
 #include "uart.h"
+#include "main.h"
 
 void uartInit(void)
 {   
@@ -13,7 +14,12 @@ void uartInit(void)
     U2STA = (0b10<<14)|(1<<10);// UTXEN
             //int generated when buffer empty
             
+    
+#ifdef SLOW_DEBUG
+    U2BRG = 10; //baud 38400
+#else
     U2BRG = 4; //baud=2000000
+#endif
     //U2BRG=36;
             
     
