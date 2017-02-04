@@ -25,7 +25,7 @@ const uint8_t randByte[] = {
 222,246,200
 };
 
-struct settings {
+struct settings_t{
 	//main settings
 	int glMode;
 	int gmMode;
@@ -38,7 +38,7 @@ struct settings {
 
 	int sm_secondDuration;
 	int sm_shakiness;
-};
+} settings;
 
 
 void taskCal(void)
@@ -66,6 +66,9 @@ void taskCal(void)
                 vSetting = (switchGetKnob(1)*5)/0x10000;
                 dacSet((vSetting+1)*0xffff/15,1);
                 dacLoad();
+                
+                settings.glMode = vSetting;
+                
                 //UART_print_dec(0,vSetting);
                 switch(vSetting){
                     case GL_SOLID:
@@ -193,14 +196,22 @@ void taskCal(void)
                         dacLoad();
                         //total shake intensity controlled by knob 1 (should be virtual)
                         
-                        tlcSetChannel(GAUGE1,switchGetKnob(0)+randByte[TMR1&0xff]*rtccSec());
-                        tlcSetChannel(GAUGE2,switchGetKnob(0)+randByte[(TMR1+64)&0xff]*rtccSec());
-                        tlcSetChannel(GAUGE3,switchGetKnob(0)+randByte[(TMR1+64)&0xff]*rtccSec());
-                        tlcSetChannel(GAUGE4,switchGetKnob(0)+randByte[(TMR1+64)&0xff]*rtccSec());
+                        tlcSetChannel(GAUGE1,switchGetKnob(0)+(randByte[TMR1&0xff]*rtccSec())/60);
+                        tlcSetChannel(GAUGE2,switchGetKnob(0)+(randByte[(TMR1+64)&0xff]*rtccSec()/60));
+                        tlcSetChannel(GAUGE3,switchGetKnob(0)+(randByte[(TMR1+64+64)&0xff]*rtccSec()/60));
+                        tlcSetChannel(GAUGE4,switchGetKnob(0)+(randByte[(TMR1+64+64+64)&0xff]*rtccSec()/60));
                                                 
                         
                         break;
-                    case GL_PULSESEC:
+                    case GL_PULSESEC://minimum intensity, with the last quadrant ramping up
+                        fadeUp = switchGetKnob(0);
+                        if(TMR1>((0x8000*3)/4)) {
+                            fadeUp+= (TMR1<<2)-0x8000;
+                        }
+                        tlcSetChannel(GAUGE1,fadeUp);
+                        tlcSetChannel(GAUGE2,fadeUp);
+                        tlcSetChannel(GAUGE3,fadeUp);
+                        tlcSetChannel(GAUGE4,fadeUp);
                         break;
                     default:
                         break; 
@@ -208,8 +219,13 @@ void taskCal(void)
                 tlcAssemble(0b11110000000);
 				break;
 			case SET_GAUGEMODE:
+                vSetting = (switchGetKnob(1)*2)/0x10000;
+                 
+                
+                settings.glMode = vSetting;
 				break;
 			case SET_LED:
+                
 				break;
             case SET_CALHR:
 				break;
